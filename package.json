@@ -1,0 +1,16 @@
+{
+  "name": "videoapp-backend",
+  "version": "1.0.0",
+  "description": "A backend for a video streaming app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "backend",
+    "node",
+    "javascript"
+  ],
+  "author": "Pawang Rai",
+  "license": "ISC"
+}
