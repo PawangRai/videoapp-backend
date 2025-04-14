@@ -15,4 +15,6 @@ app.use(express.urlencoded({extended: true, limit: "16kb"})) // for accessing da
 
 app.use(express.static("public")) // for storing files, etc
 
+app.use(cookieParser())
+
 export { app }
