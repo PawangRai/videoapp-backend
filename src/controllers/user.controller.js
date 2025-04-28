@@ -4,7 +4,7 @@ import {User} from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
-import mongoose from "mongoose";
+import mongoose  from "mongoose";
 
 const options = {
     httpOnly: true,
@@ -53,7 +53,7 @@ const registerUser = asyncHandler( async (req, res) => {
         $or: [{ username }, { email }]
     })
 
-    if (existedUser) throw new ApiError(409, "User wcith email or username already exists")
+    if (existedUser) throw new ApiError(409, "User with email or username already exists")
 
     // console.log("Request.files is this: ", req.files);
 
