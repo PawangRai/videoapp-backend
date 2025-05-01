@@ -80,9 +80,11 @@ const updateComment = asyncHandler(async (req, res) => {
     return res
     .status(200)
     .json(
-        200,
-        updateComment,
-        "Comment has been updated"
+        new ApiResponse(
+            200,
+            updateComment,
+            "Comment has been updated"
+        )
     )
 
 })
@@ -114,7 +116,13 @@ const deleteComment = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(200, deletedComment, "Comment has been deleted successfully")
+    .json(
+        new ApiResponse(
+            200,
+            deletedComment,
+            "Comment has been deleted successfully"
+        )
+    )
 
 })
 
