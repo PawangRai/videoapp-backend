@@ -109,8 +109,6 @@ const getUserTweets = asyncHandler(async (req, res) => {
         tweets,
         "Tweets fetched successfully"
     ))
-
-   
 })
 
 const updateTweet = asyncHandler(async (req, res) => {
