@@ -18,7 +18,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
   const totalSubscribers = await Subscription.aggregate([
     {
       $match: {
-        channel: mongoose.Types.ObjectId(userId)
+        channel: new mongoose.Types.ObjectId(userId)
       }
     },
     {
@@ -84,6 +84,75 @@ const getChannelStats = asyncHandler(async (req, res) => {
 
 const getChannelVideos = asyncHandler(async (req, res) => {
     // TODO: Get all the videos uploaded by the channel
+
+    // get the req.user._id from the middleware
+    // match videos where the owner is our logged in user
+    // get the likes from the likes schema
+    // break down the createdAt into year, month and day
+    // project what you want to return to the user
+
+    const userId = req.user?._id
+
+    const videos = await Video.aggregate([
+      {
+        $match: {
+          owner: new mongoose.Types.ObjectId(userId)
+        }
+      },
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "video",
+          as: "likes"
+        }
+      },
+      {
+        $addFields: {
+          createdAt: {
+            $dateToParts: {date: "$createdAt"}
+          },
+          likesCount: {
+            $size: "$likes"
+          }
+        }
+      },
+      {
+        $sort: {
+          createdAt: -1
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          videoFile: 1,
+          thumbnail: 1,
+          title: 1,
+          description: 1,
+          createdAt: {
+            year: 1,
+            month: 1,
+            day: 1
+          },
+          isPublished: 1,
+          likesCount: 1
+        }
+      }
+    ])
+
+    if (!videos) {
+      throw new ApiError(500, "Error while getting data from database")
+    }
+
+    return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        videos,
+        "Channel videos retrieved successfully"
+      )
+    );
 
 })
 
