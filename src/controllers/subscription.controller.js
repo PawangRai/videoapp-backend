@@ -153,7 +153,92 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
+    // get the subscriberId from the params
+    // make sure that it is a valid object Id
+    // use mongoDb aggregate to $match only those subscribers who match our subscriberId
+    // use $lookup to get a list of channels (users) to which our subscriber has subscribed
+    // use another pipeline and lookup to get the videos of thos channels
+    // only get the latest videos
+    // project what data you need
+    // return appropriate response
+
     const { subscriberId } = req.params
+
+    if (!isValidObjectId(subscriberId)) {
+        throw new ApiError(400, "Please insert valid object Id")
+    }
+
+    const subscribedChannels = await Subscription.aggregate([
+        {
+            $match: {
+                subscriber: new mongoose.Types.ObjectId(subscriberId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "channel",
+                foreignField: "_id",
+                as: "subscribedChannels",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "videos",
+                            localField: "_id",
+                            foreignField: "owner",
+                            as: "videos"
+                        }
+                    },
+                    {
+                        $addFields: {
+                            latestVideo: {
+                                $last: "$videos"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: "$subscribedChannel"
+        },
+        {
+            $project: {
+                _id: 0,
+                subscribedChannels: {
+                    _id: 1,
+                    username: 1,
+                    fullName: 1,
+                    avatar: 1,
+                    latestVideo: {
+                        _id: 1,
+                        videoFile: 1,
+                        thumbnail: 1,
+                        owner: 1,
+                        title: 1,
+                        description: 1,
+                        duration: 1,
+                        createdAt: 1,
+                        views: 1
+                    }
+                }
+            }
+        }
+    ])
+
+    if (!subscribedChannels) {
+        throw new ApiError(500, "Error while getting list of subscribed channels")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            subscribedChannels,
+            "Successfully retrieved list of user's subscribed channels"
+        )
+    )
 })
 
 export {
