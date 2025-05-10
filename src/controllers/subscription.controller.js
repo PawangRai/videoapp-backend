@@ -59,10 +59,96 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
+    // first get the channelId from the params
+    // check if the channelId is a valid object
+    // use $match to find the channel whose channel property equals our channelId
+    // use $lookup to then get a list of users who are subscribed to the channel
+    // use another nested pipeline to get a list of channels which the user with the channelId has subscribed to
+    // Use addFields to get the subscriber count as well as check if the check if the there is a channel in the list of subscribers that the current channel whose subscribers we are trying to find also follows them
+    // project what data you want to output
+    // give appropriate response
 
-    
 
     const {channelId} = req.params
+
+    if (!isValidObjectId(channelId)) {
+        throw new ApiError(400, "Please input valid channel Id")
+    }
+
+    const userSubscribers = await Subscription.aggregate([
+        {
+            $match: {
+                channel: new mongoose.Types.ObjectId(channelId) // This gives us only that channel which will match our channelId
+            }
+        },
+        {
+            $lookup: { // This lookup will give users that are subscribed to that channel
+                from: "users",
+                localField: "subscriber",
+                foreignField: "_id",
+                as: "subscriber",
+                pipeline: [
+                    {
+                        $lookup: { // This nested lookup will help us to find our the channel whose subscribers we are trying to find subscribers back to any of the subscribers in his subscriber list
+                            from: "subscribers",
+                            localField: "_id",
+                            foreignField: "channel",
+                            as: "subscribedToChannel"
+                        }
+                    },
+                    {
+                        $addFields: {
+                            subscribedToChannel: {
+                                $cond: {
+                                    if: {
+                                        $in: [
+                                            channelId, // Check if the channelId is subscribed to any of the list of subscribers of channelId
+                                            "$subscribedToChannel.subscriber"
+                                        ]
+                                    },
+                                    then: true,
+                                    else: false
+                                }
+                            },
+                            subscriberCount: {
+                                $size: "$subscribedToChannel"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: "$subscriber"
+        },
+        {
+            $project: {
+                _id: 0,
+                subscriber: {
+                    _id: 1,
+                    username: 1,
+                    fullName: 1,
+                    avatar: 1,
+                    subscribedToChannel: 1,
+                    subscriber: 1
+                }
+            }
+        }
+    ])
+
+    if (!userSubscribers) {
+        throw new ApiError(500, "Error while fetching user subscribers")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            userSubscribers,
+            "User subscribers fetched successfully"
+        )
+    )
 })
 
 // controller to return channel list to which user has subscribed
