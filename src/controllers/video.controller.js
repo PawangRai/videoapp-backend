@@ -15,8 +15,73 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     // TODO: get video, upload to cloudinary, create video
 
+    // get title and description from req.body
+    // make sure that these both are not empty
+    // make sure that another video with the same title and description does not exist
+    // get the local path for the video and the thumbnail from req.files
+    // make sure that we have successfully received the local path for video and thumbnail
+    // upload the received video and thumbnail on cloudinary
+    // create a new document in mongodb with these details
+    // return appropriate response is everything is done successfully
     
     const { title, description} = req.body
+
+    if (!title || !description) {
+        throw new ApiError(400, "title and description both are required")
+    }
+
+    const videoExists = await Video.findOne({
+        $and: [{title}, {description}]
+    })
+
+    if (videoExists) {
+        throw new ApiError(400, "Video with title and description already exists, please try another title and description")
+    }
+
+    const localVideoPath = req.files?.videoFile?.[0]?.path
+    const localThumbnailPath = req.files?.thumbnail?.[0]?.path
+
+    if (!localVideoPath) {
+        throw new ApiError(400, "Video file is required")
+    }
+
+    if (!localThumbnailPath) {
+        throw new ApiError(400, "Thumbnail file is required")
+    }
+
+    const video = await uploadOnCloudinary(localVideoPath)
+    const thumbnail = await uploadOnCloudinary(localThumbnailPath)
+
+    if (!video) {
+        throw new ApiError(400, "Video file is required")
+    }
+
+    if (!thumbnail) {
+        throw new ApiError(400, "Thumbnail file is required")
+    }
+
+    const videoInDB = await Video.create({
+        videoFile: video.url,
+        thumbnail: thumbnail.url,
+        title,
+        description,
+        duration: video.duration,
+        owner: req.user?._id
+    })
+
+    if (!videoInDB) {
+        throw new ApiError(400, "Error while uploading video, please try again")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            videoInDB,
+            "Video has been uploaded successfully"
+        )
+    )
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
