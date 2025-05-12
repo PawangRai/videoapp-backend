@@ -271,8 +271,6 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Error while uploading avatar to cloudinary")
     }
 
-    // Add a utility function to delete old image urls in the database
-
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
