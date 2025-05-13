@@ -281,6 +281,18 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         {new: true}
     ).select("-password")
 
+    const avatarPublicUrl = user.avatar.split("/").slice(-1)[0].split(".")[0]
+
+    try {
+        const deleteAvatarFromCloudinary = await uploadOnCloudinary.uploader.destroy(avatarPublicUrl, {resource_type: "image"})
+
+        if (deleteAvatarFromCloudinary.result !== "ok") {
+            throw new ApiError(400, "Failed to delete avatar from cloudinary")
+        }
+    } catch (error) {
+        throw new ApiError(500, `Error while deleting avatar from cloudinary ${error.message}`)
+    }
+
     return res
     .status(200)
     .json(new ApiResponse(200, user, "Avatar image updated successfully"))
@@ -308,6 +320,19 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
         },
         {new: true}
     ).select("-password")
+
+    const coverImagePublicUrl = user.coverImage.split("/").slice(-1)[0].split(".")[0]
+
+    try {
+        const deleteCoverImageFromCloudinary = await uploadOnCloudinary.uploader.destroy(coverImagePublicUrl, {resource_type: "image"})
+
+        if (deleteCoverImageFromCloudinary.result !== "ok") {
+            throw new ApiError(400, "Failed to delete cover image from cloudinary")
+        }
+    } catch (error) {
+        throw new ApiError(500, `Error while deleting cover image from cloudinary ${error.message}`)
+    }
+
 
     return res
     .status(200)
